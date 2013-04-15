@@ -14,6 +14,7 @@ from bootstrapping_olympics.extra.ros.publisher.ros_publisher import ROSPublishe
 from reprep.plot_utils.axes import y_axis_set
 from procgraph_signals.history import HistoryInterval
 from std_srvs.srv import Empty, EmptyResponse
+import warnings
 
 STATE_WAIT = 'wait'
 STATE_SERVOING = 'servoing'
@@ -45,15 +46,19 @@ class ServoDemo(ROSNode):
         self.info('Started.')
 
         self.boot_root = rospy.get_param('~boot_root')
+        rs2b_config_dir = rospy.get_param('~config_dir')
         
         self.id_ros_robot_adapter = rospy.get_param('~id_ros_robot_adapter')
         self.id_agent = rospy.get_param('~id_agent')
         self.id_robot = rospy.get_param('~id_robot')
         
         rs2b_config = get_rs2b_config()
-        self.ros_robot_adapter = rs2b_config.adapters.instance(self.id_ros_robot_adapter)
-        
+        rs2b_config.load(rs2b_config_dir)
         self.data_central = DataCentral(self.boot_root)
+        bo_config = self.data_central.get_bo_config()
+        bo_config.load(rs2b_config_dir)
+        
+        self.ros_robot_adapter = rs2b_config.adapters.instance(self.id_ros_robot_adapter)
         
         
         self.agent, self.state = load_agent_state(self.data_central, self.id_agent, self.id_robot,
@@ -70,6 +75,7 @@ class ServoDemo(ROSNode):
         self.adapter_node.obs_callback(self.obs_ready)
         
         self.y0 = None
+        self.e0 = None
         
         self.publisher = ROSPublisher()
         self.info('Finished initialization')
@@ -85,6 +91,7 @@ class ServoDemo(ROSNode):
         rospy.Service('start_servo', Empty, self.srv_start_servo)
         rospy.Service('stop_servo', Empty, self.srv_stop_servo)
    
+        self.started_now = False
         rospy.spin()    
         
     # Gui
@@ -99,11 +106,13 @@ class ServoDemo(ROSNode):
     def srv_start_servo(self, req):  # @UnusedVariable
         self.info('called "start_servo"')
         self.state = STATE_SERVOING
+        self.started_now = True
         return EmptyResponse()
     
     def srv_stop_servo(self, req):  # @UnusedVariable
         self.info('called "stop_servo"')
         self.state = STATE_WAIT
+        
         return EmptyResponse()
 
     def obs_ready(self, msg):  # @UnusedVariable
@@ -117,14 +126,14 @@ class ServoDemo(ROSNode):
         
         commands = self.get_servo_commands(boot_data)
         
-        msg = 'u_raw: %8.3f %8.3f %8.3f ' % tuple(commands)
-        
+        pc = lambda x: ' '.join(['+%.3f' % a for a in x]) 
+        msg = 'u: %s ' % pc(commands)
         
         if self.state == STATE_WAIT:
             self.info('hold %s' % msg)
             pass
         elif self.state == STATE_SERVOING:
-            self.info('send %s' % msg)
+            # self.info('send %s' % msg)
             self.adapter_node.send_commands(commands)
         
         
@@ -134,20 +143,35 @@ class ServoDemo(ROSNode):
         
         if self.y0 is None:
             self.set_goal_observations(y)
+            
+        if self.started_now or self.e0 is None:
+            # First iteration with new goal
+            self.e0 = self.get_distance_to_goal(y)
+            self.started_now = False
 
-        e_raw = y - self.y0
-        e_limit = 0.1 
-        too_far = np.abs(e_raw) > e_limit 
-
-        boot_data['observations'][too_far] = self.y0[too_far]
+        if self.state == STATE_SERVOING:    
+            e = self.get_distance_to_goal(y)
+            print('e0: %8f   e: %8f  e/e0: %8f' % (self.e0, e, e / self.e0))
+            
+            if e < 1.6:
+                print('stopping here')
+                return np.array([0, 0]) 
+            
+# 
+#         if False:
+#             e_raw = y - self.y0
+#             e_limit = 0.1 
+#             too_far = np.abs(e_raw) > e_limit 
+#     
+#             boot_data['observations'][too_far] = self.y0[too_far]
 
         self.servo_agent.process_observations(boot_data)
     
         res = self.servo_agent.choose_commands2()  # repeated
         self.u_history.push(t, res['u_raw'])
         
-        msg = 'u_raw: %8.3f %8.3f %8.3f ' % tuple(res['u_raw'])
-        msg += 'u    : %8.3f %8.3f %8.3f ' % tuple(res['u'])
+#         msg = 'u_raw: %8.3f %8.3f ' % tuple(res['u_raw'])
+#         msg += 'u    : %8.3f %8.3f  ' % tuple(res['u'])
 
         
         publish = False
@@ -176,16 +200,32 @@ class ServoDemo(ROSNode):
                 pylab.plot(ts, us)
                 y_axis_set(pylab, -1.1, 1.1)
          
+#         warnings.warn('choosing u_raw')
         commands = res['u']
         
         # commands = -commands
-        commands[0] = 0
-        commands[1] = 0
-        # commands[2] = 0
+#         commands[0] = 0
+#         commands[1] = 0
+# #         
+#         warnings.warn('Pazza idea')
+#         u = res['u'].copy()
+#         commands[0] = u[1]
+#         commands[1] = -u[0]
+        
+#         warnings.warn('0 linear')
+#         commands[0] = 0
+#         commands[1] = 0
+#         
+#          
+#         warnings.warn('For the moment, theta is set to 0')
+#         commands[2] = 0
 
         return commands
     
 
+    def get_distance_to_goal(self, y):
+        return np.linalg.norm(y - self.y0)
+    
     @contract(y='array')
     def set_goal_observations(self, y):
         self.y0 = y.copy()

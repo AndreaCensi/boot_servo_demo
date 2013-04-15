@@ -1,0 +1,12 @@
+<launch>
+        <node pkg="boot_servo_demo" name="servo_manager" type="servo_demo.py"
+        	  required='true' output='screen'>
+        	<param name='boot_root' 
+        		   value='/data/work/scm/boot12env/src/bvapps/1304-youbot/out/boot-root'/> 
+        	<param name='config_dir' 
+        		   value='/data/work/scm/boot12env/src/bvapps/1304-youbot/'/> 
+			<param name='id_agent' value='exp08_bdser1'/>
+			<param name='id_robot' value='exp05_uA_xy'/>
+			<param name='id_ros_robot_adapter' value='exp05_uA_xy'/>
+        </node>
+</launch>
