@@ -14,7 +14,9 @@ from bootstrapping_olympics.extra.ros.publisher.ros_publisher import ROSPublishe
 from reprep.plot_utils.axes import y_axis_set
 from procgraph_signals.history import HistoryInterval
 from std_srvs.srv import Empty, EmptyResponse
-import warnings
+from rospy.numpy_msg import numpy_msg
+from boot_servo_demo.msg._Raw import Raw
+
 
 STATE_WAIT = 'wait'
 STATE_SERVOING = 'servoing'
@@ -74,14 +76,14 @@ class ServoDemo(ROSNode):
 
         self.adapter_node.obs_callback(self.obs_ready)
         
-        self.y0 = None
+        self.y = None
+        self.y_goal = None
         self.e0 = None
         
-        self.publisher = ROSPublisher()
+#         self.publisher = ROSPublisher()
         self.info('Finished initialization')
         
-        
-        self.u_history = HistoryInterval(10)
+#         self.u_history = HistoryInterval(10)
         
         self.last_boot_data = None
          
@@ -92,6 +94,9 @@ class ServoDemo(ROSNode):
         rospy.Service('stop_servo', Empty, self.srv_stop_servo)
    
         self.started_now = False
+   
+        self.publish_info_init()     
+        
         rospy.spin()    
         
     # Gui
@@ -136,100 +141,98 @@ class ServoDemo(ROSNode):
             # self.info('send %s' % msg)
             self.adapter_node.send_commands(commands)
         
+        self.publish_info()
         
     def get_servo_commands(self, boot_data):
         t = boot_data['timestamp']
-        y = boot_data['observations']
+        self.y = boot_data['observations']
         
-        if self.y0 is None:
-            self.set_goal_observations(y)
+        if self.y_goal is None:
+            self.set_goal_observations(self.y)
             
         if self.started_now or self.e0 is None:
             # First iteration with new goal
-            self.e0 = self.get_distance_to_goal(y)
+            self.e0 = self.get_distance_to_goal(self.y)
             self.started_now = False
 
         if self.state == STATE_SERVOING:    
-            e = self.get_distance_to_goal(y)
+            e = self.get_distance_to_goal(self.y)
             print('e0: %8f   e: %8f  e/e0: %8f' % (self.e0, e, e / self.e0))
             
             if e < 1.6:
                 print('stopping here')
                 return np.array([0, 0]) 
-            
-# 
-#         if False:
-#             e_raw = y - self.y0
-#             e_limit = 0.1 
-#             too_far = np.abs(e_raw) > e_limit 
-#     
-#             boot_data['observations'][too_far] = self.y0[too_far]
-
+             
         self.servo_agent.process_observations(boot_data)
     
-        res = self.servo_agent.choose_commands2()  # repeated
-        self.u_history.push(t, res['u_raw'])
-        
-#         msg = 'u_raw: %8.3f %8.3f ' % tuple(res['u_raw'])
-#         msg += 'u    : %8.3f %8.3f  ' % tuple(res['u'])
+        res = self.servo_agent.choose_commands2() 
+        self.u = res['u']
+        return self.u
 
+
+    def publish_info_init(self):
+        self.pub_u = rospy.Publisher('~u', numpy_msg(Raw))
+        self.pub_y = rospy.Publisher('~y', numpy_msg(Raw)) 
+        self.pub_y_goal = rospy.Publisher('~y_goal', numpy_msg(Raw))
+
+    def publish_info(self):    
+        nraw = numpy_msg(Raw)
         
-        publish = False
-        if publish:
-            pub = self.publisher
-            
-            sec = pub.section('servo')
-            sec.array('y', y)
-            sec.array('y0', self.y0)
-            
-            with sec.plot('both') as pylab:
-                pylab.plot(self.y0, 'sk')
-                pylab.plot(y, '.g')
-                
-                y_axis_set(pylab, -0.1, 1.1)
-                
-            e = y - self.y0
-            with sec.plot('error') as pylab:
-                pylab.plot(e, '.m')
-                # y_axis_set(pylab, -1.1, 1.1)
-                y_axis_set(pylab, -e_limit - 0.1, e_limit + 0.1)
-            
-            ts, us = self.u_history.get_ts_xs()
-            us = np.array(us)            
-            with sec.plot('u') as pylab:
-                pylab.plot(ts, us)
-                y_axis_set(pylab, -1.1, 1.1)
-         
-#         warnings.warn('choosing u_raw')
-        commands = res['u']
+        msg_y = nraw()
+        msg_y.values = self.y
+        msg_y.importance = np.ones(self.y.shape)
+        self.pub_y.publish(msg_y)
+
+        msg_y_goal = nraw()
+        msg_y_goal.values = self.y_goal
+        msg_y_goal.importance = np.ones(self.y.shape)
+        self.pub_y_goal.publish(msg_y_goal)
+
+        msg_u = nraw()
+        msg_u.values = self.u
+        msg_u.importance = np.ones(self.y.shape)
+        self.pub_u.publish(msg_u)
+
+    
         
-        # commands = -commands
-#         commands[0] = 0
-#         commands[1] = 0
-# #         
-#         warnings.warn('Pazza idea')
-#         u = res['u'].copy()
-#         commands[0] = u[1]
-#         commands[1] = -u[0]
         
-#         warnings.warn('0 linear')
-#         commands[0] = 0
-#         commands[1] = 0
+#         self.u_history.push(t, res['u_raw'])
 #         
+#         publish = False
+#         if publish:
+#             pub = self.publisher
+#             
+#             sec = pub.section('servo')
+#             sec.array('y', y)
+#             sec.array('y0', self.y_goal)
+#             
+#             with sec.plot('both') as pylab:
+#                 pylab.plot(self.y_goal, 'sk')
+#                 pylab.plot(y, '.g')
+#                 
+#                 y_axis_set(pylab, -0.1, 1.1)
+#                 
+#             e = y - self.y_goal
+#             with sec.plot('error') as pylab:
+#                 pylab.plot(e, '.m')
+#                 # y_axis_set(pylab, -1.1, 1.1)
+#                 y_axis_set(pylab, -e_limit - 0.1, e_limit + 0.1)
+#             
+#             ts, us = self.u_history.get_ts_xs()
+#             us = np.array(us)            
+#             with sec.plot('u') as pylab:
+#                 pylab.plot(ts, us)
+#                 y_axis_set(pylab, -1.1, 1.1)
 #          
-#         warnings.warn('For the moment, theta is set to 0')
-#         commands[2] = 0
-
-        return commands
     
 
     def get_distance_to_goal(self, y):
-        return np.linalg.norm(y - self.y0)
+        return np.linalg.norm(y - self.y_goal)
     
     @contract(y='array')
     def set_goal_observations(self, y):
-        self.y0 = y.copy()
-        self.servo_agent.set_goal_observations(self.y0)
+        self.y_goal = y.copy()
+        self.servo_agent.set_goal_observations(self.y_goal)
         
  
 
