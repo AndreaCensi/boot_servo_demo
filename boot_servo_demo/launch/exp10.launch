@@ -5,13 +5,12 @@
         		   value='/data/work/1303-youbot-videos/20-grace-workspace/out/boot-root'/> 
         	<param name='config_dir' 
         		   value='/data/work/scm/boot12env/src/bvapps/1304-youbot/'/> 
-			<param name='id_agent' value='exp08_bdser1'/>
-			<param name='id_robot' value='exp05_uA_xy'/>
-			<param name='id_ros_robot_adapter' value='exp05_uA_xy'/>
+			<param name='id_agent' value='exp10_bdser1'/>
+			<param name='id_robot' value='uA_b1_tw_hlhr_s4'/>
+			<param name='id_ros_robot_adapter' value='unicornA_base1_tw_hlhr_sane_s4'/>
 			
-			<param name='error_threshold' value='0.01'/>
+			<param name='error_threshold' value='0.015'/>
 			
-			<param name='K' value='[1,1]'/>
-			
+			<param name='K' value='[1,1,0.25]'/>
         </node>
 </launch>
