@@ -1,23 +1,26 @@
 #!/usr/bin/env python
 import roslib; roslib.load_manifest('boot_servo_demo')  # @IgnorePep8
 
-from bootstrapping_olympics.programs.manager.meat.data_central import DataCentral
-from bootstrapping_olympics.programs.manager.meat.load_agent_state import load_agent_state
-import numpy as np
-import rospy 
- 
-from ros_node_utils import ROSNode
-from rosstream2boot.nodes.ros_adapter_node import ROSRobotAdapterNode
-from rosstream2boot.config import get_rs2b_config
+from boot_servo_demo.msg import Raw
+from bootstrapping_olympics.programs.manager.meat.data_central import (
+    DataCentral)
+from bootstrapping_olympics.programs.manager.meat.load_agent_state import (
+    load_agent_state)
+from bootstrapping_olympics.utils.safe_pickle import (safe_pickle_load,
+    safe_pickle_dump)
 from contracts import contract
-
-from std_srvs.srv import Empty, EmptyResponse
+from ros_node_utils import ROSNode
 from rospy.numpy_msg import numpy_msg
-from boot_servo_demo.msg._Raw import Raw
+from rosstream2boot.config import get_rs2b_config
+from rosstream2boot.nodes.ros_adapter_node import ROSRobotAdapterNode
+from std_msgs.msg import String
+from std_srvs.srv import Empty, EmptyResponse
+import numpy as np
 import os
-from bootstrapping_olympics.utils.safe_pickle import safe_pickle_load, \
-    safe_pickle_dump
-from std_msgs.msg._String import String
+import rospy
+import warnings
+ 
+
 nraw = numpy_msg(Raw)
 
 
@@ -134,7 +137,11 @@ class ServoDemo(ROSNode):
         if not buf:
             # 
             pass
-        boot_data = buf[-1]
+        try:
+            boot_data = buf[-1]
+        except:
+            return
+        
         self.last_boot_data = boot_data.copy()
         
         self.u = self.get_servo_commands(boot_data)
@@ -179,8 +186,11 @@ class ServoDemo(ROSNode):
 
         self.servo_agent.process_observations(boot_data)
     
-        res = self.servo_agent.choose_commands2(self.K) 
-        u = res['u']
+        u = self.servo_agent.choose_commands() 
+
+        warnings.warn('This was what worked for rotation.')
+#         res = self.servo_agent.choose_commands2(self.K) 
+#         u = res['u']
 
 
         if self.state == STATE_SERVOING:    
