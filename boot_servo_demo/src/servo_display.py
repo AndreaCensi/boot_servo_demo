@@ -1,11 +1,11 @@
-
+#!/usr/bin/env python
 import roslib; roslib.load_manifest('boot_servo_demo')  # @IgnorePep8
 
 import pylab
 import Tkinter
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from rospy.numpy_msg import numpy_msg 
-from boot_servo_demo.msg._Raw import Raw
+from boot_servo_demo.msg import Raw
 import rospy
 
 class ServoPlotter:
@@ -87,11 +87,13 @@ class ServoPlotter:
     
         rospy.Subscriber('/servo_manager/y', numpy_msg(Raw), self.callback_arrived, callback_args='y')
         rospy.Subscriber('/servo_manager/y_goal', numpy_msg(Raw), self.callback_arrived, callback_args='y_goal')        
+
+        rospy.Subscriber('/servo_demo/y', numpy_msg(Raw), self.callback_arrived, callback_args='y')
+        rospy.Subscriber('/servo_demo/y_goal', numpy_msg(Raw), self.callback_arrived, callback_args='y_goal')        
 #         rospy.Subscriber('/servo_manager/u', numpy_msg(Raw), self.callback_arrived, callback_args='u')        
 #     
     
         self.data = {}
-        #         rospy.spin()
         Tkinter.mainloop() 
         
     def callback_arrived(self, msg, name):

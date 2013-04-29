@@ -9,6 +9,8 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/boot_servo_demo</url>
 
+  <depend package="landroid_murraylab"/>
+
 </package>
 
 

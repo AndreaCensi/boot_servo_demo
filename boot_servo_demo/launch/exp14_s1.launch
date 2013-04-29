@@ -3,8 +3,7 @@
         	  required='true' output='screen'>
         	<param name='boot_root' 
         		   value='/data/work/1303-youbot-videos/20-grace-workspace/out/boot-root'/> 
-        	<param name='config_dir' 
-        		   value='/data/work/scm/boot12env/src/bvapps/1304-youbot/'/> 
+        	<param name='config_dir' value='/data/work/scm/boot12env/src/yc1304/'/> 
 			<param name='id_agent' value='exp14_bdser_s1'/>
 			<param name='id_robot' value='exp14_uA_b1_xy_cf_strip'/>
 			<param name='id_ros_robot_adapter' value='uA_b1_xy_cf_strip'/>
