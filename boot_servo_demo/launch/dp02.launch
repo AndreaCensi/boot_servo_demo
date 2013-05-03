@@ -1,0 +1,21 @@
+<launch>
+  <node pkg="boot_servo_demo" name="servo_demo" type="servo_demo2.py"
+        required='true' output='screen'>
+      
+      <param name='boot_root' 
+             value='${YC2013WS}/out/boot-root'/> 
+      
+      <param name='config_dir' 
+      		value='default:/data/work/scm/boot12env/src/yc1304:${YC2013WS}/diffeo-from-lambda/'/>
+      
+      <param name='id_agent' value='dp_tmp1'/>
+      <param name='id_robot' value='dp_unicornB'/>
+      <param name='id_robot_learn' value='dp_unicornB'/>
+      
+      <param name='raise_if_no_state' value='0'/>
+      
+      <param name='error_threshold' value='0.015'/>
+  	  <param name='sleep' value='0.01'/>
+  
+  </node>
+</launch>
