@@ -3,9 +3,8 @@
 # addition for signal interrupt by Koen Buys
 
 from bootstrapping_olympics import get_boot_config
-from quickapp import quickapp_main
-from quickapp.library.app.quickapp_interface import QuickAppBase
-from rosstream2boot.config.rbconfig import get_rs2b_config
+from quickapp import QuickAppBase
+from rosstream2boot import get_rs2b_config
 import numpy as np
 import select
 import signal
@@ -57,7 +56,7 @@ def getKeys(timeout):
 class TeleOp(QuickAppBase):
     
     def define_program_options(self, params):
-        params.add_required_string('robot')
+        params.add_string('robot')
         params.add_string_list('config', default=[])
         params.add_float('rate', default=0.1)
         
@@ -94,4 +93,4 @@ class TeleOp(QuickAppBase):
             robot.set_commands(rest, 'rest')
 
 if __name__ == '__main__':
-    quickapp_main(TeleOp)
+    TeleOp.get_sys_main()()
