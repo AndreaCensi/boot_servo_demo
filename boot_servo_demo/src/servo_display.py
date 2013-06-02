@@ -16,8 +16,7 @@ class ServoPlotter:
             n = y.size
             x = range(n)
             self.line_y[0].set_data(x, y)
-            
-            
+        
             if 'y_goal' in self.data:
                 y_goal = self.data['y_goal'].values
                 self.line_y_goal[0].set_data(x, y_goal)
@@ -34,7 +33,6 @@ class ServoPlotter:
     def _quit(self):
         self.root.quit()
         self.root.destroy()
-        
     
     def main(self):
         root = Tkinter.Tk()

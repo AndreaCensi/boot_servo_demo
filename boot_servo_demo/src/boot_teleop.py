@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# Initial code created by Graylin Trevor Jay (tjay@cs.brown.edu) an published under Crative Commens Attribution license.
+# Initial code created by Graylin Trevor Jay (tjay@cs.brown.edu) and
+#  published under Crative Commens Attribution license.
 # addition for signal interrupt by Koen Buys
 
 from bootstrapping_olympics import get_boot_config
@@ -10,8 +11,8 @@ import select
 import signal
 import sys
 import termios
-import tty
 import time
+import tty
 
 moveBindings = {
     'u': (+1, +1),
@@ -86,8 +87,8 @@ class TeleOp(QuickAppBase):
                     u = rest
                 robot.set_commands(u, 'teleop')
                 time.sleep(rate)
-        except Exception as e:
-            print str(e)
+#         except Exception as e:
+#             # print str(e)
             
         finally:
             robot.set_commands(rest, 'rest')

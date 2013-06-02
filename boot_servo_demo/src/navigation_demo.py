@@ -5,9 +5,8 @@ from boot_servo_demo.msg import Raw
 from bootstrapping_olympics import bd_sequence_from_robot, get_boot_config
 from bootstrapping_olympics.programs.manager import (DataCentral,
     load_agent_state)
-from bootstrapping_olympics.utils import safe_pickle_load, safe_pickle_dump
+from bootstrapping_olympics.utils import safe_pickle_load
 from conf_tools import GlobalConfig
-from conf_tools.utils import expand_environment
 from contracts import contract
 from ros_node_utils import ROSNode
 from rospy.numpy_msg import numpy_msg
@@ -15,9 +14,9 @@ from std_msgs.msg import String
 from std_srvs.srv import Empty, EmptyResponse
 import contracts
 import numpy as np
-import os
 import rospy
-
+from bootstrapping_olympics.utils import expand_environment
+from boot_agents.robustness.importance import Importance
 
 nraw = numpy_msg(Raw)
 
@@ -26,8 +25,7 @@ STATE_WAIT = 'wait'
 STATE_SERVOING = 'servoing'
 
 
-
-class ServoDemo2(ROSNode):
+class NavigationDemo(ROSNode):
     """ 
         
         Parameters:
@@ -37,7 +35,8 @@ class ServoDemo2(ROSNode):
             id_robot: id_robot
             
             id_robot_learned: 
-        
+            
+            map = out-exp29/compmake/cm:default:res:20130531195407-create_navigation_map_from_episode.pickle
             config_dir: list of configutation directories
                     
     """
@@ -67,6 +66,9 @@ class ServoDemo2(ROSNode):
         self.info('sleep: %s' % self.sleep)
         self.error_threshold = float(rospy.get_param('~error_threshold'))
         
+        nmap = expand_environment(rospy.get_param('~map'))
+        self.nmap = safe_pickle_load(nmap)
+        
         raise_if_no_state = rospy.get_param('~raise_if_no_state', True)
         
         data_central = DataCentral(boot_root)
@@ -94,7 +96,8 @@ class ServoDemo2(ROSNode):
         self.e = 1         
         self.last_boot_data = None
         self.state = STATE_WAIT
-
+        self.index_cur = None
+        
         self.info('Defining services')
         rospy.Service('set_goal', Empty, self.srv_set_goal)
         rospy.Service('start_servo', Empty, self.srv_start_servo)
@@ -102,7 +105,13 @@ class ServoDemo2(ROSNode):
                 
         self.info('Finished initialization') 
         self.count = 0
+        
+        # TODO: to remove
+
+        self.importance = Importance(max_y_dot=1000, max_gy=1000, min_y=0.01, max_y=0.99)
+
         self.go()
+        
         
     def go(self):
         id_episode = 'XXX'  # XXX
@@ -184,27 +193,22 @@ class ServoDemo2(ROSNode):
         rest = self.robot.get_spec().get_commands().get_default_value()
         self.robot.set_commands(rest, 'rest')
         
-
     def get_servo_commands(self, boot_data):
         self.y = boot_data['observations']
         
-        if self.y_goal is None:
-            if os.path.exists(ServoDemo2.state_filename):
-                self.info('Loading y_goal from %s' % ServoDemo2.state_filename)
-                y_goal = safe_pickle_load(ServoDemo2.state_filename)
-                try: 
-                    obs_spec = self.robot.get_spec().get_observations()
-                    obs_spec.check_valid_value(y_goal)
-                    
-                    self.set_goal_observations(y_goal)
-                except Exception as e:
-                    self.error(str(e))
-                    self.info('Removing file; using current observations')
-                    os.unlink(ServoDemo2.state_filename)
-                    self.set_goal_observations(self.y)
-            else:
-                self.set_goal_observations(self.y)
-            
+        if self.index_cur is None:
+            next_cur = self.nmap.get_closest_point(self.y)
+        else:
+            next_cur = self.nmap.get_closest_point_around(self.y, self.index_cur, r=3)
+        
+        # don't go back
+        self.index_cur = max(next_cur, self.index_cur)
+
+        index_target = self.index_cur + 1
+        print('cur: %d (inst: %d) target: %d' % (self.index_cur, next_cur, index_target))
+        goal = self.nmap.get_observations_at(index_target)
+        self.set_goal_observations(goal)
+              
         if self.started_now or self.e0 is None:
             # First iteration with new goal
             self.e0 = self.get_distance_to_goal(self.y)
@@ -256,12 +260,12 @@ class ServoDemo2(ROSNode):
     
     @contract(y='array')
     def set_goal_observations(self, y):
-        self.y_goal = y.copy()
-        
-        safe_pickle_dump(self.y_goal, ServoDemo2.state_filename)
-        
+        self.y_goal = y.copy()        
         self.servo_agent.set_goal_observations(self.y_goal)
         
 
+
+
+
 if __name__ == '__main__':
-    ServoDemo2().main()
+    NavigationDemo().main()

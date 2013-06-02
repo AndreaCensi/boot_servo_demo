@@ -1,0 +1,21 @@
+<launch>
+  <node pkg="boot_servo_demo" name="servo_demo" type="navigation_demo.py"
+        required='true' output='screen'>
+      
+      <param name='boot_root' value='${YC2013WS}/out-exp29'/> 
+      <param name='config_dir' value='/data/work/scm/boot12env/src/yc1304'/>
+      
+      <param name='id_agent' value='exp08_bdser1'/>
+      <param name='id_robot' value='unicornA_tw1_hlhr_sane_s4'/>
+      <param name='id_robot_learn' value='unicornA_tw1_hlhr_sane_s4'/>
+      
+      <param name='raise_if_no_state' value='1'/>
+      
+      <param name='error_threshold' value='0.015'/>
+  	  <param name='sleep' value='0.005'/>
+
+
+  	  <param name='map' value='${YC2013WS}/out-exp29/compmake/cm:default:res:20130531195407-create_navigation_map_from_episode.pickle'/>
+
+  </node>
+</launch>
