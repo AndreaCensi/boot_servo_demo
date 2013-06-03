@@ -16,7 +16,7 @@ import contracts
 import numpy as np
 import rospy
 from bootstrapping_olympics.utils import expand_environment
-from boot_agents.robustness.importance import Importance
+import warnings
 
 nraw = numpy_msg(Raw)
 
@@ -106,10 +106,6 @@ class NavigationDemo(ROSNode):
         self.info('Finished initialization') 
         self.count = 0
         
-        # TODO: to remove
-
-        self.importance = Importance(max_y_dot=1000, max_gy=1000, min_y=0.01, max_y=0.99)
-
         self.go()
         
         
@@ -133,6 +129,8 @@ class NavigationDemo(ROSNode):
 
     def srv_set_goal(self, req):  # @UnusedVariable
         self.info('called "set_goal"')
+        # reset localization
+        self.index_cur = None
         if self.last_boot_data is not None:
             self.set_goal_observations(self.last_boot_data['observations'])
         else:
@@ -167,8 +165,9 @@ class NavigationDemo(ROSNode):
         self.u = self.get_servo_commands(boot_data)
         self.publish_info()
         
+        msg = '%s|' % self.state
         pc = lambda x: ' '.join(['%+6.3f' % a for a in x]) 
-        msg = 'u: %s ' % pc(self.u)
+        msg += 'u: %s ' % pc(self.u)
         
         
         msg += ('e0: %8f   e: %8f  e/e0: %8f' % 
@@ -196,17 +195,39 @@ class NavigationDemo(ROSNode):
     def get_servo_commands(self, boot_data):
         self.y = boot_data['observations']
         
-        if self.index_cur is None:
-            next_cur = self.nmap.get_closest_point(self.y)
-        else:
-            next_cur = self.nmap.get_closest_point_around(self.y, self.index_cur, r=3)
-        
-        # don't go back
-        self.index_cur = max(next_cur, self.index_cur)
+#         if self.index_cur is None:
+#             next_cur = self.nmap.get_closest_point(self.y)
+#         else:
+#             next_cur = self.nmap.get_closest_point_around(self.y, self.index_cur, r=3)
+#          
+#         # don't go back
+#         self.index_cur = max(next_cur, self.index_cur)
 
-        index_target = self.index_cur + 1
-        print('cur: %d (inst: %d) target: %d' % (self.index_cur, next_cur, index_target))
-        goal = self.nmap.get_observations_at(index_target)
+        plus = 2
+        inst = self.get_closest_point(self.y)
+        if self.index_cur is None:
+            self.index_cur = inst
+            self.index_target = self.index_cur + plus
+            
+        index_next = self.index_cur + 1 
+        # if we are closer to target
+        # d_target = self.get_distance(self.y, self.nmap.get_observations_at(self.index_target))
+        d_cur = self.get_distance(self.y, self.nmap.get_observations_at(self.index_cur))
+        d_next = self.get_distance(self.y, self.nmap.get_observations_at(index_next))
+        ratio = d_next / d_cur
+        ratio_threshold = 0.95
+        d_next_threshold = 0.03
+        print('ratio: %1.4f <= %1.4f  d_next: %1.4f < %1.4f' % (ratio, ratio_threshold,
+                                                                d_next, d_next_threshold))
+        if d_next < ratio_threshold * d_cur and d_next < d_next_threshold:
+            self.info('closer to next than to cur')
+            self.index_cur += 1
+            self.index_target = self.index_cur + plus
+        
+        indices = dict(inst=inst, cur=self.index_cur, next=index_next, target=self.index_target)
+        print(self.get_navigation_status_string(self.y, indices))
+        
+        goal = self.nmap.get_observations_at(self.index_target)
         self.set_goal_observations(goal)
               
         if self.started_now or self.e0 is None:
@@ -220,14 +241,25 @@ class NavigationDemo(ROSNode):
             
         self.boot_spec.get_commands().check_valid_value(u)
 
-        if self.state == STATE_SERVOING:    
-            self.e = self.get_distance_to_goal(self.y)
-            if self.e < self.error_threshold:
-                self.info('stopping here')
-                return u * 0 
-    
+        u[2] *= 0.25
+#         warnings.warn('remove')
+#         u = u * 0.4
+#         if self.state == STATE_SERVOING:    
+#             self.e = self.get_distance_to_goal(self.y)
+#             if self.e < self.error_threshold:
+#                 self.info('stopping here')
+#                 return u * 0 
+#     
         return u
 
+    def get_navigation_status_string(self, cur_obs, indices):
+        s = ''
+        for k, index in indices.items():
+            obs = self.nmap.get_observations_at(index)
+            dist = self.get_distance(obs, cur_obs)
+            s += ' %s=%5d (%10f)' % (k, index, dist)
+        return s
+    
     def publish_info_init(self):
         self.pub_u = rospy.Publisher('~u', numpy_msg(Raw))
         self.pub_y = rospy.Publisher('~y', numpy_msg(Raw)) 
@@ -254,16 +286,22 @@ class NavigationDemo(ROSNode):
         self.pub_servo_state.publish(msg_state)
      
     def get_distance_to_goal(self, y):
-        disc = np.abs(y - self.y_goal)
+        return self.get_distance(y, self.y_goal)
+    
+    def get_distance(self, y1, y2):
+#         return self.servo_agent.get_distance(y1, y2)
+        disc = np.abs(y1 - y2)
         L1_robust = np.percentile(disc, 80)
         return L1_robust
-    
+#     
+
     @contract(y='array')
     def set_goal_observations(self, y):
         self.y_goal = y.copy()        
         self.servo_agent.set_goal_observations(self.y_goal)
         
-
+    def get_closest_point(self, y):
+        return self.nmap.get_closest_point(y, self.get_distance)
 
 
 

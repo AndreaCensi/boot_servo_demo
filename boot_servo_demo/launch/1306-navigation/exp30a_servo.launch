@@ -1,0 +1,18 @@
+<launch>
+  <node pkg="boot_servo_demo" name="servo_demo" type="servo_demo2.py"
+        required='true' output='screen'>
+
+      <param name='boot_root' value='${YC2013WS}/out-exp30'/> 
+      <param name='config_dir' value='/data/work/scm/boot12env/src/yc1304'/>
+      
+      <param name='id_agent' value='exp30_bdser_sn1'/>
+      <param name='id_robot' value='unicornA_tw1_hlhr_sane_s4'/>
+      <param name='id_robot_learn' value='unicornA_tw1_hlhr_sane_s4'/>
+      
+	  <param name='K' value='[1,1,0.25]'/>
+      
+      <param name='error_threshold_old' value='0.015'/>
+      <param name='error_threshold' value='0.015'/>
+  
+  </node>
+</launch>
