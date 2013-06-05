@@ -17,7 +17,9 @@ import numpy as np
 import rospy
 from bootstrapping_olympics.utils import expand_environment
 import warnings
-
+from bootstrapping_olympics.utils.safe_pickle import safe_pickle_dump
+from servo_demo2 import ServoDemo2
+ 
 nraw = numpy_msg(Raw)
 
 
@@ -203,10 +205,11 @@ class NavigationDemo(ROSNode):
 #         # don't go back
 #         self.index_cur = max(next_cur, self.index_cur)
 
-        plus = 2
+        plus = 1
         inst = self.get_closest_point(self.y)
         if self.index_cur is None:
-            self.index_cur = inst
+            # self.index_cur = inst
+            self.index_cur = self.get_initial_closest_point(self.y)
             self.index_target = self.index_cur + plus
             
         index_next = self.index_cur + 1 
@@ -217,9 +220,11 @@ class NavigationDemo(ROSNode):
         ratio = d_next / d_cur
         ratio_threshold = 0.95
         d_next_threshold = 0.03
+        d_next_threshold_alone = 0.04
         print('ratio: %1.4f <= %1.4f  d_next: %1.4f < %1.4f' % (ratio, ratio_threshold,
                                                                 d_next, d_next_threshold))
-        if d_next < ratio_threshold * d_cur and d_next < d_next_threshold:
+        if (d_next < ratio_threshold * d_cur and d_next < d_next_threshold) or \
+        d_next < d_next_threshold_alone:
             self.info('closer to next than to cur')
             self.index_cur += 1
             self.index_target = self.index_cur + plus
@@ -229,7 +234,8 @@ class NavigationDemo(ROSNode):
         
         goal = self.nmap.get_observations_at(self.index_target)
         self.set_goal_observations(goal)
-              
+        safe_pickle_dump(goal, ServoDemo2.state_filename)
+        
         if self.started_now or self.e0 is None:
             # First iteration with new goal
             self.e0 = self.get_distance_to_goal(self.y)
@@ -241,8 +247,11 @@ class NavigationDemo(ROSNode):
             
         self.boot_spec.get_commands().check_valid_value(u)
 
-        u[2] *= 0.25
-#         warnings.warn('remove')
+#         u[2] *= 0.5
+#         u[0] *= 0.5
+#         u[1] *= 0.5
+#         u[2] *= 0.5
+        warnings.warn('remove')
 #         u = u * 0.4
 #         if self.state == STATE_SERVOING:    
 #             self.e = self.get_distance_to_goal(self.y)
@@ -303,6 +312,11 @@ class NavigationDemo(ROSNode):
     def get_closest_point(self, y):
         return self.nmap.get_closest_point(y, self.get_distance)
 
+        
+    def get_initial_closest_point(self, y):
+        i = 0 
+        r = 50
+        return self.nmap.get_closest_point_around(y, i, r, self.get_distance)
 
 
 if __name__ == '__main__':

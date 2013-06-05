@@ -17,6 +17,7 @@ import contracts
 import numpy as np
 import os
 import rospy
+import warnings
 
 
 nraw = numpy_msg(Raw)
@@ -222,6 +223,8 @@ class ServoDemo2(ROSNode):
                 self.info('stopping here')
                 return u * 0 
     
+#         warnings.warn('remove')
+#         u[2] *= 0.25
         return u
 
     def publish_info_init(self):

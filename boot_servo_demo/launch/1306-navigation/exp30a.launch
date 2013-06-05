@@ -2,10 +2,10 @@
   <node pkg="boot_servo_demo" name="servo_demo" type="navigation_demo.py"
         required='true' output='screen'>
       
-      <param name='boot_root' value='${YC2013WS}/out-exp30'/> 
+      <param name='boot_root' value='${LAMBDA_WS}/out-exp30'/> 
       <param name='config_dir' value='/data/work/scm/boot12env/src/yc1304'/>
       
-      <param name='id_agent' value='exp30_bdser_sn1'/>
+      <param name='id_agent' value='bdser_er1_i2_ss'/>
       <param name='id_robot' value='unicornA_tw1_hlhr_sane_s4'/>
       <param name='id_robot_learn' value='unicornA_tw1_hlhr_sane_s4'/>
       
@@ -16,7 +16,16 @@
 
   	  <param name='map_corner'  
   	 value='${YC2013WS}/out-exp29/compmake/cm:default:res:corner20130602203217-create_navigation_map_from_episode.pickle'/>
-	<param name='map' 
-	value='${YC2013WS}/out-exp29/compmake/cm:default:res:20130602182523-create_navigation_map_from_episode.pickle'/>
+	<param name='map_closed' 
+	value='${YC2013WS}/out-exp29/compmake/cm:default:res:20130602182523-hl-create_navigation_map_from_episode.pickle'/>
+	<param name='map2' 
+	value='${YC2013WS}/out-exp29/compmake/cm:default:res:20130531195407-hl-create_navigation_map_from_episode.pickle'/>
+  	<param name='map3'
+  	value='${YC2013WS}/out-exp29/unicornA_tw1_hlhr_sane_s4-unicornA_teleop_nmap_corner2_2013-06-04-20-29-33.pickle'/>
+  	<param name='map'
+  	value='${YC2013WS}/out-exp29/unicornA_tw1_hlhr_sane_s4-unicornA_teleop_nmap_corner2_2013-06-04-21-05-42.pickle'/>
+  
   </node>
+  
+  
 </launch>
