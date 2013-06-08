@@ -217,14 +217,15 @@ class ServoDemo2(ROSNode):
             
         self.boot_spec.get_commands().check_valid_value(u)
 
+        self.e = self.get_distance_to_goal(self.y)
         if self.state == STATE_SERVOING:    
-            self.e = self.get_distance_to_goal(self.y)
             if self.e < self.error_threshold:
                 self.info('stopping here')
                 return u * 0 
     
 #         warnings.warn('remove')
-#         u[2] *= 0.25
+#         u *= 0.5
+#         u[2] *= 0.2
         return u
 
     def publish_info_init(self):

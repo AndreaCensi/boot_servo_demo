@@ -66,7 +66,12 @@ class NavigationDemo(ROSNode):
         self.id_robot = rospy.get_param('~id_robot')
         self.sleep = rospy.get_param('~sleep', 0.005)
         self.info('sleep: %s' % self.sleep)
-        self.error_threshold = float(rospy.get_param('~error_threshold'))
+#         self.error_threshold = float(rospy.get_param('~error_threshold'))
+        
+        self.ratio_threshold = float(rospy.get_param('~ratio_threshold'))  # 0.95
+        self.d_next_threshold = float(rospy.get_param('~d_next_threshold'))  # 0.03
+        self.d_next_threshold_alone = float(rospy.get_param('~d_next_threshold_alone'))  # 0.04
+        
         
         nmap = expand_environment(rospy.get_param('~map'))
         self.nmap = safe_pickle_load(nmap)
@@ -212,19 +217,21 @@ class NavigationDemo(ROSNode):
             self.index_cur = self.get_initial_closest_point(self.y)
             self.index_target = self.index_cur + plus
             
+        if self.index_cur >= self.nmap.npoints() - 1 - plus:
+            self.info('starting from beginning')
+            self.index_cur = 0
+            
         index_next = self.index_cur + 1 
         # if we are closer to target
         # d_target = self.get_distance(self.y, self.nmap.get_observations_at(self.index_target))
         d_cur = self.get_distance(self.y, self.nmap.get_observations_at(self.index_cur))
         d_next = self.get_distance(self.y, self.nmap.get_observations_at(index_next))
         ratio = d_next / d_cur
-        ratio_threshold = 0.95
-        d_next_threshold = 0.03
-        d_next_threshold_alone = 0.04
-        print('ratio: %1.4f <= %1.4f  d_next: %1.4f < %1.4f' % (ratio, ratio_threshold,
-                                                                d_next, d_next_threshold))
-        if (d_next < ratio_threshold * d_cur and d_next < d_next_threshold) or \
-        d_next < d_next_threshold_alone:
+        if False:
+            print('ratio: %1.4f <= %1.4f  d_next: %1.4f < %1.4f' % (ratio, self.ratio_threshold,
+                                                                d_next, self.d_next_threshold))
+        if (d_next < self.ratio_threshold * d_cur and d_next < self.d_next_threshold) or \
+            d_next < self.d_next_threshold_alone:
             self.info('closer to next than to cur')
             self.index_cur += 1
             self.index_target = self.index_cur + plus
@@ -251,22 +258,28 @@ class NavigationDemo(ROSNode):
 #         u[0] *= 0.5
 #         u[1] *= 0.5
 #         u[2] *= 0.5
-        warnings.warn('remove')
+#         warnings.warn('remove')
 #         u = u * 0.4
 #         if self.state == STATE_SERVOING:    
 #             self.e = self.get_distance_to_goal(self.y)
 #             if self.e < self.error_threshold:
 #                 self.info('stopping here')
 #                 return u * 0 
-#     
+# #     
+#         u *= 0.4
+#         u[2] *= 0
+        u *= 2
         return u
 
     def get_navigation_status_string(self, cur_obs, indices):
         s = ''
         for k, index in indices.items():
-            obs = self.nmap.get_observations_at(index)
-            dist = self.get_distance(obs, cur_obs)
-            s += ' %s=%5d (%10f)' % (k, index, dist)
+            if index >= self.nmap.npoints():
+                s += ' %s=out' % k
+            else:
+                obs = self.nmap.get_observations_at(index)
+                dist = self.get_distance(obs, cur_obs)
+                s += ' %s=%5d (%10f)' % (k, index, dist)
         return s
     
     def publish_info_init(self):

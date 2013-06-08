@@ -1,0 +1,26 @@
+<launch>
+  <node pkg="boot_servo_demo" name="servo_demo" type="navigation_demo.py"
+        required='true' output='screen'>
+      
+      <param name='boot_root' value='${LAMBDA_WS}/out-exp30c'/> 
+      <param name='config_dir' value='/data/work/scm/boot12env/src/yc1304'/>
+      
+      <param name='id_agent' value='exp14_bdser_s3'/>
+      <param name='id_robot' value='unicornA_tr1_cf_strip'/>
+      <param name='id_robot_learn' value='unicornA_tr1_cf_strip'/>
+      
+      <param name='raise_if_no_state' value='1'/>
+  	  <param name='sleep' value='0.005'/>
+      
+      <param name='ratio_threshold' value='0.95'/> # 0.95
+      <param name='d_next_threshold' value='0.03'/> # 0.03
+      <param name='d_next_threshold_alone' value='0.04'/> # 0.04
+
+
+  	<param name='map'
+  	value='${YC2013WS}/out-exp29/unicornA_tr1_cf_strip-unicornA_teleop_nmap_corner3_2013-06-05-21-19-26.pickle'/>
+  
+  </node>
+  
+  
+</launch>
