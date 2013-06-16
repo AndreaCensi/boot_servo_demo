@@ -1,0 +1,16 @@
+<launch>
+  <node pkg="boot_servo_demo" name="servo_demo" type="servo_demo2.py"
+        required='true' output='screen'>
+  
+	  <param name='boot_root' value='${LAMBDA_WS}/out-exp33'/> 
+      <param name='config_dir' value='/data/work/scm/boot12env/src/yc1304'/>
+      
+      <param name='id_agent' value='bdse_e1_ss'/>
+      <param name='id_robot' value='unicornA_tw1_fs1'/>
+      <param name='id_robot_learn' value='unicornA_tw1_fs1'/>
+      
+  
+      <param name='error_threshold' value='0.04'/>
+  
+  </node>
+</launch>

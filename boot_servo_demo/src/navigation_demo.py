@@ -17,7 +17,7 @@ import numpy as np
 import rospy
 from bootstrapping_olympics.utils import expand_environment
 import warnings
-from bootstrapping_olympics.utils.safe_pickle import safe_pickle_dump
+from bootstrapping_olympics.utils import safe_pickle_dump
 from servo_demo2 import ServoDemo2
  
 nraw = numpy_msg(Raw)
@@ -201,15 +201,7 @@ class NavigationDemo(ROSNode):
         
     def get_servo_commands(self, boot_data):
         self.y = boot_data['observations']
-        
-#         if self.index_cur is None:
-#             next_cur = self.nmap.get_closest_point(self.y)
-#         else:
-#             next_cur = self.nmap.get_closest_point_around(self.y, self.index_cur, r=3)
-#          
-#         # don't go back
-#         self.index_cur = max(next_cur, self.index_cur)
-
+         
         plus = 1
         inst = self.get_closest_point(self.y)
         if self.index_cur is None:
@@ -223,7 +215,6 @@ class NavigationDemo(ROSNode):
             
         index_next = self.index_cur + 1 
         # if we are closer to target
-        # d_target = self.get_distance(self.y, self.nmap.get_observations_at(self.index_target))
         d_cur = self.get_distance(self.y, self.nmap.get_observations_at(self.index_cur))
         d_next = self.get_distance(self.y, self.nmap.get_observations_at(index_next))
         ratio = d_next / d_cur
@@ -254,21 +245,6 @@ class NavigationDemo(ROSNode):
             
         self.boot_spec.get_commands().check_valid_value(u)
 
-#         u[2] *= 0.5
-#         u[0] *= 0.5
-#         u[1] *= 0.5
-#         u[2] *= 0.5
-#         warnings.warn('remove')
-#         u = u * 0.4
-#         if self.state == STATE_SERVOING:    
-#             self.e = self.get_distance_to_goal(self.y)
-#             if self.e < self.error_threshold:
-#                 self.info('stopping here')
-#                 return u * 0 
-# #     
-#         u *= 0.4
-#         u[2] *= 0
-        u *= 2
         return u
 
     def get_navigation_status_string(self, cur_obs, indices):
@@ -315,7 +291,6 @@ class NavigationDemo(ROSNode):
         disc = np.abs(y1 - y2)
         L1_robust = np.percentile(disc, 80)
         return L1_robust
-#     
 
     @contract(y='array')
     def set_goal_observations(self, y):
@@ -324,7 +299,6 @@ class NavigationDemo(ROSNode):
         
     def get_closest_point(self, y):
         return self.nmap.get_closest_point(y, self.get_distance)
-
         
     def get_initial_closest_point(self, y):
         i = 0 

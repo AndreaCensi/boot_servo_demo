@@ -6,11 +6,10 @@
       <param name='config_dir' value='/data/work/scm/boot12env/src/yc1304'/>
       
       <param name='id_agent' value='bdse_e1_ss'/>
-      <param name='id_robot' value='unicornA_tw1_fs1'/>
-      <param name='id_robot_learn' value='unicornA_tw1_fs1'/>
-      
-  
-      <param name='error_threshold' value='0.023'/>
+      <param name='id_robot' value='unicornA_tr1_fs1'/>
+      <param name='id_robot_learn' value='unicornA_tr1_fs1'/>
+
+      <param name='error_threshold' value='0.04'/>
   
   </node>
 </launch>
