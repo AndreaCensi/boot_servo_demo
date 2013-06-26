@@ -17,8 +17,7 @@ import contracts
 import numpy as np
 import os
 import rospy
-import warnings
-
+ 
 
 nraw = numpy_msg(Raw)
 

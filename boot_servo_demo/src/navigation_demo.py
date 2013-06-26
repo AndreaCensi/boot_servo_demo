@@ -5,20 +5,18 @@ from boot_servo_demo.msg import Raw
 from bootstrapping_olympics import bd_sequence_from_robot, get_boot_config
 from bootstrapping_olympics.programs.manager import (DataCentral,
     load_agent_state)
-from bootstrapping_olympics.utils import safe_pickle_load
+from bootstrapping_olympics.utils import (expand_environment, safe_pickle_dump,
+    safe_pickle_load)
 from conf_tools import GlobalConfig
 from contracts import contract
 from ros_node_utils import ROSNode
 from rospy.numpy_msg import numpy_msg
+from servo_demo2 import ServoDemo2
 from std_msgs.msg import String
 from std_srvs.srv import Empty, EmptyResponse
 import contracts
 import numpy as np
 import rospy
-from bootstrapping_olympics.utils import expand_environment
-import warnings
-from bootstrapping_olympics.utils import safe_pickle_dump
-from servo_demo2 import ServoDemo2
  
 nraw = numpy_msg(Raw)
 
